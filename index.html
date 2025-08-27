@@ -453,15 +453,15 @@
 
     <main class="card">
       <section class="hero">
-        <p class="invite-line">Anh mời em đi chơi vào <strong>10h sáng Chủ nhật</strong> 💖</p>
+        <p class="invite-line">Anh mời em đi chơi vào <strong> Chủ nhật tuần nàyy</strong> 💖</p>
         <div class="details">
           <div class="detail">
             <span class="label">Ngày giờ</span>
-            <span class="value">90:00 • Chủ nhật (31/08/2025)</span>
+            <span class="value">10:00 • Chủ nhật (31/08/2025)</span>
           </div>
           <div class="detail">
             <span class="label">Trang phục</span>
-            <span class="value"> Em thích là đượt ✨ </span>
+            <span class="value"> Em thích là được ✨ </span>
           </div>
         </div>
 
@@ -544,7 +544,7 @@
     setInterval(makeHeart, 800);
     for (let i = 0; i < 15; i++) setTimeout(makeHeart, i * 200);
 
-    // Enhanced no button dodges cursor - chạy khi hover và click
+    // FIXED: Enhanced no button dodging logic with proper bounds checking
     const noBtn = document.getElementById('noBtn');
     let dodgeCount = 0;
     let isMoving = false;
@@ -571,28 +571,61 @@
       
       // Nếu chuột ở gần button (trong 80px) thì button sẽ chạy
       if (distance < 80 && dodgeCount < 8) {
-        moveNo();
+        moveNo(e);
       }
     });
     
-    function moveNo() {
+    function moveNo(event) {
       if (isMoving) return;
       isMoving = true;
       
       dodgeCount++;
-      const pad = 30;
-      const maxX = window.innerWidth - noBtn.offsetWidth - pad * 2;
-      const maxY = window.innerHeight - noBtn.offsetHeight - pad * 2;
       
-      // Tính toán vị trí mới xa chuột
+      // Giảm padding để nó có thể di chuyển gần hơn
+      const pad = 50; // Giảm từ 100 xuống 50
+      const btnWidth = noBtn.offsetWidth || 120;
+      const btnHeight = noBtn.offsetHeight || 50;
+      
+      // Tính toán bounds an toàn
+      const maxX = window.innerWidth - btnWidth - pad;
+      const maxY = window.innerHeight - btnHeight - pad;
+      const minX = pad;
+      const minY = pad;
+      
+      // Lấy vị trí chuột hiện tại
       const mouseX = event?.clientX || window.innerWidth / 2;
       const mouseY = event?.clientY || window.innerHeight / 2;
       
-      let x, y;
+      let x, y, attempts = 0;
+      
+      // FIXED: Cải thiện logic tìm vị trí mới
       do {
-        x = Math.random() * maxX + pad;
-        y = Math.random() * maxY + pad;
-      } while (Math.sqrt(Math.pow(x - mouseX, 2) + Math.pow(y - mouseY, 2)) < 5);
+        // Tạo vị trí ngẫu nhiên trong khu vực an toàn
+        x = minX + Math.random() * (maxX - minX);
+        y = minY + Math.random() * (maxY - minY);
+        attempts++;
+        
+        // Nếu thử quá nhiều lần, chọn vị trí cố định xa chuột
+        if (attempts > 10) {
+          // Đặt nút ở góc đối diện với chuột
+          if (mouseX < window.innerWidth / 2) {
+            x = Math.max(minX, maxX - 100); // Bên phải
+          } else {
+            x = minX; // Bên trái
+          }
+          
+          if (mouseY < window.innerHeight / 2) {
+            y = Math.max(minY, maxY - 50); // Dưới
+          } else {
+            y = minY; // Trên
+          }
+          break;
+        }
+      } while (Math.sqrt(Math.pow(x - mouseX, 2) + Math.pow(y - mouseY, 2)) < 80); // Giảm xuống để nó quanh quanh gần thôi
+      
+      // Đảm bảo vị trí cuối cùng vẫn trong bounds
+      x = Math.max(minX, Math.min(x, maxX));
+      y = Math.max(minY, Math.min(y, maxY));
       
       noBtn.style.position = 'fixed';
       noBtn.style.left = x + 'px';
@@ -684,7 +717,7 @@
     // Generate enhanced ICS file
     document.getElementById('addCalendar').addEventListener('click', (e) => {
       e.preventDefault();
-      const ymd = '20250105'; // Thay đổi ngày thực tế
+      const ymd = '20250831'; // Ngày 31/08/2025
       const start = ymd + 'T100000';
       const end = ymd + 'T120000';
       const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Your Name//Invite Card//VI\nBEGIN:VEVENT\nUID:${Date.now()}@invite\nDTSTAMP:${ymd}T090000\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:Hẹn hò 10h sáng Chủ nhật 💛\nDESCRIPTION:Đi chơi cùng nhau 💖\nLOCATION:Điền địa điểm\nEND:VEVENT\nEND:VCALENDAR`;
@@ -694,8 +727,4 @@
       a.href = url; 
       a.download = 'hen-ho-10h-chu-nhat.ics'; 
       a.click();
-      URL.revokeObjectURL(url);
-    });
-  </script>
-</body>
-</html>
+      URL.revoke
