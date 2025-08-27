@@ -433,6 +433,13 @@
       .timeline::before { left: 15px; }
       .step { grid-template-columns: 40px 1fr; gap: 12px; }
     }
+    
+    /* Shake animation for dodging button */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
   </style>
 </head>
 <body>
@@ -541,32 +548,89 @@
     setInterval(makeHeart, 800);
     for (let i = 0; i < 15; i++) setTimeout(makeHeart, i * 200);
 
-    // Enhanced no button dodges cursor
+    // Enhanced no button dodges cursor - chạy khi hover và click
     const noBtn = document.getElementById('noBtn');
     let dodgeCount = 0;
+    let isMoving = false;
+    
+    // Chạy khi hover (di chuột lại gần)
     noBtn.addEventListener('mouseenter', () => moveNo());
-    noBtn.addEventListener('click', () => moveNo());
+    
+    // Chạy khi click
+    noBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      moveNo();
+    });
+    
+    // Chạy khi di chuột lại gần (trong phạm vi 100px)
+    document.addEventListener('mousemove', (e) => {
+      if (isMoving) return;
+      
+      const rect = noBtn.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const distance = Math.sqrt(
+        Math.pow(e.clientX - centerX, 2) + Math.pow(e.clientY - centerY, 2)
+      );
+      
+      // Nếu chuột ở gần button (trong 80px) thì button sẽ chạy
+      if (distance < 80 && dodgeCount < 8) {
+        moveNo();
+      }
+    });
     
     function moveNo() {
+      if (isMoving) return;
+      isMoving = true;
+      
       dodgeCount++;
-      const pad = 20;
+      const pad = 30;
       const maxX = window.innerWidth - noBtn.offsetWidth - pad * 2;
       const maxY = window.innerHeight - noBtn.offsetHeight - pad * 2;
-      const x = Math.random() * maxX + pad;
-      const y = Math.random() * maxY + pad;
+      
+      // Tính toán vị trí mới xa chuột
+      const mouseX = event?.clientX || window.innerWidth / 2;
+      const mouseY = event?.clientY || window.innerHeight / 2;
+      
+      let x, y;
+      do {
+        x = Math.random() * maxX + pad;
+        y = Math.random() * maxY + pad;
+      } while (Math.sqrt(Math.pow(x - mouseX, 2) + Math.pow(y - mouseY, 2)) < 150);
       
       noBtn.style.position = 'fixed';
       noBtn.style.left = x + 'px';
       noBtn.style.top = y + 'px';
       noBtn.style.zIndex = '999';
+      noBtn.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      
+      // Thêm hiệu ứng rung
+      noBtn.style.animation = 'shake 0.5s ease-in-out';
       
       // Change button text after multiple dodges
       if (dodgeCount >= 3) {
-        noBtn.textContent = 'Không được! 😤';
+        noBtn.innerHTML = 'Không được! 😤';
       }
       if (dodgeCount >= 5) {
-        noBtn.textContent = 'Đồng ý đi! 🥺';
+        noBtn.innerHTML = 'Đồng ý đi! 🥺';
       }
+      if (dodgeCount >= 8) {
+        noBtn.innerHTML = 'OK OK, đồng ý! 😭';
+        // Sau 8 lần chạy, button sẽ không chạy nữa và tự động chuyển thành "Đồng ý"
+        setTimeout(() => {
+          noBtn.innerHTML = 'Đồng ý 💌';
+          noBtn.className = 'btn-yes';
+          noBtn.onclick = () => {
+            document.getElementById('overlay').classList.add('show');
+            createConfetti();
+          };
+        }, 1000);
+      }
+      
+      setTimeout(() => {
+        isMoving = false;
+        noBtn.style.animation = '';
+      }, 500);
     }
 
     // Modal logic with enhanced animations
