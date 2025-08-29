@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Thiệp mời 💌</title>
-  <meta name="description" content="Thiệp mời online – mời đi chơi lúc 10h sáng Chủ nhật" />
+  <meta name="description" content="Thiệp mời online – mời đi chơi lúc 9h sáng Chủ nhật" />
   <style>
     :root {
       --bg: #fffbf0;
@@ -213,6 +213,7 @@
       display: flex; justify-content: center; 
       gap: 15px; margin: 35px 0 15px; 
       flex-wrap: wrap; 
+      position: relative;
     }
     
     button {
@@ -457,7 +458,7 @@
         <div class="details">
           <div class="detail">
             <span class="label">Ngày giờ</span>
-            <span class="value">10:00 • Chủ nhật (31/08/2025)</span>
+            <span class="value">09:00 • Chủ nhật (31/08/2025)</span>
           </div>
           <div class="detail">
             <span class="label">Trang phục</span>
@@ -472,34 +473,41 @@
       </section>
 
       <section class="timeline-wrap">
-        <h2 class="timeline-title">Timeline dự kiến (bạn tự điền)</h2>
+        <h2 class="timeline-title">Timeline dự kiến</h2>
         <div class="timeline" id="timeline">
           <div class="step">
             <div class="dot"></div>
             <div class="content">
               <div class="time">09:00</div>
-              <div class="text">Đón em tại nhà</div>
+              <div class="text">Qua rước embe</div>
             </div>
           </div>
           <div class="step">
             <div class="dot"></div>
             <div class="content">
               <div class="time">10:00</div>
-              <div class="text">Đi xem Mưa đỏ</div>
+              <div class="text">Đi xem phim</div>
             </div>
           </div>
           <div class="step">
             <div class="dot"></div>
             <div class="content">
-              <div class="time">12:15</div>
-              <div class="text">Đi chụp Photobooth</div>
+              <div class="time">12:30</div>
+              <div class="text">Đi chụp ptb</div>
             </div>
           </div>
           <div class="step">
             <div class="dot"></div>
             <div class="content">
-              <div class="time">12:40</div>
-              <div class="text">Đi ăn nướngggggg</div>
+              <div class="time">13:00</div>
+              <div class="text">Đi ăng</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="dot"></div>
+            <div class="content">
+              <div class="time">14:00 ~</div>
+              <div class="text">Đi chill</div>
             </div>
           </div>
         </div>
@@ -544,23 +552,43 @@
     setInterval(makeHeart, 800);
     for (let i = 0; i < 15; i++) setTimeout(makeHeart, i * 200);
 
-    // FIXED: Enhanced no button dodging logic with proper bounds checking
+    // FIXED: Enhanced no button dodging logic with card-contained movement
     const noBtn = document.getElementById('noBtn');
+    const heroSection = document.querySelector('.hero');
     let dodgeCount = 0;
     let isMoving = false;
+    let originalPosition = null;
+    
+    // Store original position
+    function storeOriginalPosition() {
+      if (!originalPosition) {
+        const rect = noBtn.getBoundingClientRect();
+        const heroRect = heroSection.getBoundingClientRect();
+        originalPosition = {
+          left: rect.left - heroRect.left,
+          top: rect.top - heroRect.top
+        };
+      }
+    }
     
     // Chạy khi hover (di chuột lại gần)
-    noBtn.addEventListener('mouseenter', () => moveNo());
+    noBtn.addEventListener('mouseenter', () => {
+      if (dodgeCount >= 8) return;
+      storeOriginalPosition();
+      moveNo();
+    });
     
     // Chạy khi click
     noBtn.addEventListener('click', (e) => {
       e.preventDefault();
+      if (dodgeCount >= 8) return;
+      storeOriginalPosition();
       moveNo();
     });
     
-    // Chạy khi di chuột lại gần (trong phạm vi 100px)
+    // Chạy khi di chuột lại gần (trong phạm vi 80px)
     document.addEventListener('mousemove', (e) => {
-      if (isMoving) return;
+      if (isMoving || dodgeCount >= 8) return;
       
       const rect = noBtn.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -570,70 +598,71 @@
       );
       
       // Nếu chuột ở gần button (trong 80px) thì button sẽ chạy
-      if (distance < 80 && dodgeCount < 8) {
+      if (distance < 80) {
+        storeOriginalPosition();
         moveNo(e);
       }
     });
     
     function moveNo(event) {
-      if (isMoving) return;
+      if (isMoving || dodgeCount >= 8) return;
       isMoving = true;
       
       dodgeCount++;
       
-      // Giảm padding để nó có thể di chuyển gần hơn
-      const pad = 50; // Giảm từ 100 xuống 50
-      const btnWidth = noBtn.offsetWidth || 120;
-      const btnHeight = noBtn.offsetHeight || 50;
+      // Get hero section bounds for constraining movement
+      const heroRect = heroSection.getBoundingClientRect();
+      const btnRect = noBtn.getBoundingClientRect();
       
-      // Tính toán bounds an toàn
-      const maxX = window.innerWidth - btnWidth - pad;
-      const maxY = window.innerHeight - btnHeight - pad;
-      const minX = pad;
-      const minY = pad;
+      // Calculate safe movement area within hero section with padding
+      const padding = 20;
+      const maxX = heroRect.width - btnRect.width - padding;
+      const maxY = heroRect.height - btnRect.height - padding;
+      const minX = padding;
+      const minY = padding;
       
-      // Lấy vị trí chuột hiện tại
-      const mouseX = event?.clientX || window.innerWidth / 2;
-      const mouseY = event?.clientY || window.innerHeight / 2;
+      // Get mouse position relative to hero section
+      const mouseX = event?.clientX ? event.clientX - heroRect.left : heroRect.width / 2;
+      const mouseY = event?.clientY ? event.clientY - heroRect.top : heroRect.height / 2;
       
       let x, y, attempts = 0;
       
-      // FIXED: Cải thiện logic tìm vị trí mới
+      // Find a position away from mouse but within hero section
       do {
-        // Tạo vị trí ngẫu nhiên trong khu vực an toàn
+        // Generate random position within safe bounds
         x = minX + Math.random() * (maxX - minX);
         y = minY + Math.random() * (maxY - minY);
         attempts++;
         
-        // Nếu thử quá nhiều lần, chọn vị trí cố định xa chuột
+        // If too many attempts, place in corner opposite to mouse
         if (attempts > 10) {
-          // Đặt nút ở góc đối diện với chuột
-          if (mouseX < window.innerWidth / 2) {
-            x = Math.max(minX, maxX - 100); // Bên phải
+          if (mouseX < heroRect.width / 2) {
+            x = Math.max(minX, maxX - 50); // Right side
           } else {
-            x = minX; // Bên trái
+            x = minX; // Left side
           }
           
-          if (mouseY < window.innerHeight / 2) {
-            y = Math.max(minY, maxY - 50); // Dưới
+          if (mouseY < heroRect.height / 2) {
+            y = Math.max(minY, maxY - 30); // Bottom
           } else {
-            y = minY; // Trên
+            y = minY; // Top
           }
           break;
         }
-      } while (Math.sqrt(Math.pow(x - mouseX, 2) + Math.pow(y - mouseY, 2)) < 80); // Giảm xuống để nó quanh quanh gần thôi
+      } while (Math.sqrt(Math.pow(x - mouseX, 2) + Math.pow(y - mouseY, 2)) < 60);
       
-      // Đảm bảo vị trí cuối cùng vẫn trong bounds
+      // Ensure final position is within bounds
       x = Math.max(minX, Math.min(x, maxX));
       y = Math.max(minY, Math.min(y, maxY));
       
-      noBtn.style.position = 'fixed';
+      // Apply position relative to hero section
+      noBtn.style.position = 'absolute';
       noBtn.style.left = x + 'px';
       noBtn.style.top = y + 'px';
       noBtn.style.zIndex = '999';
-      noBtn.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      noBtn.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
       
-      // Thêm hiệu ứng rung
+      // Add shake animation
       noBtn.style.animation = 'shake 0.5s ease-in-out';
       
       // Change button text after multiple dodges
@@ -645,7 +674,7 @@
       }
       if (dodgeCount >= 8) {
         noBtn.innerHTML = 'OK OK, đồng ý! 😭';
-        // Sau 8 lần chạy, button sẽ không chạy nữa và tự động chuyển thành "Đồng ý"
+        // After 8 dodges, convert to yes button
         setTimeout(() => {
           noBtn.innerHTML = 'Đồng ý 💌';
           noBtn.className = 'btn-yes';
@@ -653,6 +682,10 @@
             document.getElementById('overlay').classList.add('show');
             createConfetti();
           };
+          // Reset position to center
+          noBtn.style.position = 'relative';
+          noBtn.style.left = 'auto';
+          noBtn.style.top = 'auto';
         }, 1000);
       }
       
@@ -718,13 +751,17 @@
     document.getElementById('addCalendar').addEventListener('click', (e) => {
       e.preventDefault();
       const ymd = '20250831'; // Ngày 31/08/2025
-      const start = ymd + 'T100000';
-      const end = ymd + 'T120000';
-      const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Your Name//Invite Card//VI\nBEGIN:VEVENT\nUID:${Date.now()}@invite\nDTSTAMP:${ymd}T090000\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:Hẹn hò 10h sáng Chủ nhật 💛\nDESCRIPTION:Đi chơi cùng nhau 💖\nLOCATION:Điền địa điểm\nEND:VEVENT\nEND:VCALENDAR`;
+      const start = ymd + 'T090000';
+      const end = ymd + 'T160000';
+      const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Your Name//Invite Card//VI\nBEGIN:VEVENT\nUID:${Date.now()}@invite\nDTSTAMP:${ymd}T090000\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:Hẹn hò với crush 💛\nDESCRIPTION:09:00 Qua rước embe\\n10:00 Đi xem phim\\n12:30 Đi chụp ptb\\n13:00 Đi ăng\\n14:00~ Đi chill 💖\nLOCATION:Điền địa điểm\nEND:VEVENT\nEND:VCALENDAR`;
       const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; 
-      a.download = 'hen-ho-10h-chu-nhat.ics'; 
+      a.download = 'hen-ho-chu-nhat.ics'; 
       a.click();
-      URL.revoke
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
