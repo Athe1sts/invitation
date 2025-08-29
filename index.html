@@ -558,6 +558,7 @@
     let dodgeCount = 0;
     let isMoving = false;
     let originalPosition = null;
+    let lastMoveTime = 0;
     
     // Store original position
     function storeOriginalPosition() {
@@ -577,13 +578,18 @@
     noBtn.addEventListener('click', (e) => {
       e.preventDefault();
       if (dodgeCount >= 8) return;
+      lastMoveTime = Date.now();
       storeOriginalPosition();
       moveNo();
     });
     
-    // Chạy khi di chuột lại gần (trong phạm vi 80px)
+    // Chạy khi di chuột lại gần (trong phạm vi 30px)
     document.addEventListener('mousemove', (e) => {
       if (isMoving || dodgeCount >= 8) return;
+      
+      // Throttle movement - only move once every 800ms
+      const now = Date.now();
+      if (now - lastMoveTime < 800) return;
       
       const rect = noBtn.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -592,8 +598,9 @@
         Math.pow(e.clientX - centerX, 2) + Math.pow(e.clientY - centerY, 2)
       );
       
-      // Nếu chuột ở gần button (trong 50px) thì button sẽ chạy
-      if (distance < 50) {
+      // Nếu chuột ở gần button (trong 30px) thì button sẽ chạy
+      if (distance < 30) {
+        lastMoveTime = now;
         storeOriginalPosition();
         moveNo(e);
       }
@@ -640,31 +647,49 @@
       
       let x, y, attempts = 0;
       
-      // Find a position away from mouse but within hero section
+      // Get current button position relative to hero section
+      const currentRect = noBtn.getBoundingClientRect();
+      const currentX = currentRect.left - heroRect.left;
+      const currentY = currentRect.top - heroRect.top;
+      
+      // Find a position away from mouse but close to current position (short distance movement)
+      const moveDistance = 60 + Math.random() * 40; // Random distance between 60-100px
       do {
-        // Generate random position within safe bounds
-        const randomX = Math.random() * (maxX - minX);
-        const randomY = Math.random() * (maxY - minY);
-        x = minX + randomX;
-        y = minY + randomY;
+        // Generate angle to move away from mouse
+        const mouseAngle = Math.atan2(mouseY - currentY, mouseX - currentX);
+        const awayAngle = mouseAngle + Math.PI + (Math.random() - 0.5) * 0.8; // Opposite direction with some randomness
+        
+        // Calculate new position with short distance
+        x = currentX + Math.cos(awayAngle) * moveDistance;
+        y = currentY + Math.sin(awayAngle) * moveDistance;
         attempts++;
         
-        // If too many attempts, place in corner opposite to mouse
-        if (attempts > 10) {
-          if (mouseX < heroRect.width / 2) {
-            x = Math.min(maxX, maxX - 20); // Right side
-          } else {
-            x = Math.max(minX, minX + 20); // Left side
-          }
+        // If position is out of bounds or too many attempts, try different approach
+        if (x < minX || x > maxX || y < minY || y > maxY || attempts > 5) {
+          // Try moving to a closer safe position
+          const directions = [
+            [currentX + 60, currentY], // Right
+            [currentX - 60, currentY], // Left  
+            [currentX, currentY + 60], // Down
+            [currentX, currentY - 60], // Up
+            [currentX + 40, currentY + 40], // Diagonal
+            [currentX - 40, currentY - 40]  // Diagonal
+          ];
           
-          if (mouseY < heroRect.height / 2) {
-            y = Math.min(maxY, maxY - 20); // Bottom
-          } else {
-            y = Math.max(minY, minY + 20); // Top
+          // Find first valid direction
+          for (let [testX, testY] of directions) {
+            if (testX >= minX && testX <= maxX && testY >= minY && testY <= maxY) {
+              const distFromMouse = Math.sqrt(Math.pow(testX - mouseX, 2) + Math.pow(testY - mouseY, 2));
+              if (distFromMouse > 40) {
+                x = testX;
+                y = testY;
+                break;
+              }
+            }
           }
           break;
         }
-      } while (attempts < 10 && Math.sqrt(Math.pow(x - mouseX, 2) + Math.pow(y - mouseY, 2)) < 60);
+      } while (attempts < 5 && Math.sqrt(Math.pow(x - mouseX, 2) + Math.pow(y - mouseY, 2)) < 40);
       
       // Final bounds check to ensure position is safe
       x = Math.max(minX, Math.min(x, maxX));
