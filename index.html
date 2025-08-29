@@ -559,6 +559,8 @@
     let isMoving = false;
     let originalPosition = null;
     let lastMoveTime = 0;
+    let currentX = null;
+    let currentY = null;
     
     // Store original position
     function storeOriginalPosition() {
@@ -647,53 +649,66 @@
       
       let x, y, attempts = 0;
       
-      // Get current button position relative to hero section
-      const currentRect = noBtn.getBoundingClientRect();
-      const currentX = currentRect.left - heroRect.left;
-      const currentY = currentRect.top - heroRect.top;
+      // Initialize current position if not set
+      if (currentX === null || currentY === null) {
+        // Use center of the hero area as starting point
+        currentX = heroRect.width / 2 - btnWidth / 2;
+        currentY = heroRect.height / 2 - btnHeight / 2;
+      }
       
-      // Find a position away from mouse but close to current position (short distance movement)
-      const moveDistance = 60 + Math.random() * 40; // Random distance between 60-100px
-      do {
-        // Generate angle to move away from mouse
-        const mouseAngle = Math.atan2(mouseY - currentY, mouseX - currentX);
-        const awayAngle = mouseAngle + Math.PI + (Math.random() - 0.5) * 0.8; // Opposite direction with some randomness
+      // Simple movement: pick a safe direction and move short distance
+      const moveDistance = 40 + Math.random() * 20; // Random distance between 40-60px
+      const directions = [
+        { dx: 1, dy: 0 },   // Right
+        { dx: -1, dy: 0 },  // Left
+        { dx: 0, dy: 1 },   // Down  
+        { dx: 0, dy: -1 },  // Up
+        { dx: 1, dy: 1 },   // Down-Right
+        { dx: -1, dy: -1 }, // Up-Left
+        { dx: 1, dy: -1 },  // Up-Right
+        { dx: -1, dy: 1 }   // Down-Left
+      ];
+      
+      // Shuffle directions to add randomness
+      for (let i = directions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [directions[i], directions[j]] = [directions[j], directions[i]];
+      }
+      
+      // Try each direction until we find a safe one
+      let foundSafePosition = false;
+      for (let dir of directions) {
+        const testX = currentX + dir.dx * moveDistance;
+        const testY = currentY + dir.dy * moveDistance;
         
-        // Calculate new position with short distance
-        x = currentX + Math.cos(awayAngle) * moveDistance;
-        y = currentY + Math.sin(awayAngle) * moveDistance;
-        attempts++;
-        
-        // If position is out of bounds or too many attempts, try different approach
-        if (x < minX || x > maxX || y < minY || y > maxY || attempts > 5) {
-          // Try moving to a closer safe position
-          const directions = [
-            [currentX + 60, currentY], // Right
-            [currentX - 60, currentY], // Left  
-            [currentX, currentY + 60], // Down
-            [currentX, currentY - 60], // Up
-            [currentX + 40, currentY + 40], // Diagonal
-            [currentX - 40, currentY - 40]  // Diagonal
-          ];
-          
-          // Find first valid direction
-          for (let [testX, testY] of directions) {
-            if (testX >= minX && testX <= maxX && testY >= minY && testY <= maxY) {
-              const distFromMouse = Math.sqrt(Math.pow(testX - mouseX, 2) + Math.pow(testY - mouseY, 2));
-              if (distFromMouse > 40) {
-                x = testX;
-                y = testY;
-                break;
-              }
-            }
+        // Check if position is within bounds
+        if (testX >= minX && testX <= maxX && testY >= minY && testY <= maxY) {
+          // Check if far enough from mouse
+          const distFromMouse = Math.sqrt(Math.pow(testX - mouseX, 2) + Math.pow(testY - mouseY, 2));
+          if (distFromMouse > 40) {
+            x = testX;
+            y = testY;
+            foundSafePosition = true;
+            break;
           }
-          break;
         }
-      } while (attempts < 5 && Math.sqrt(Math.pow(x - mouseX, 2) + Math.pow(y - mouseY, 2)) < 40);
+      }
+      
+      // Fallback: if no safe position found, just move a tiny bit away from mouse
+      if (!foundSafePosition) {
+        const awayFromMouseX = mouseX < heroRect.width / 2 ? 1 : -1;
+        const awayFromMouseY = mouseY < heroRect.height / 2 ? 1 : -1;
+        x = Math.max(minX, Math.min(maxX, currentX + awayFromMouseX * 30));
+        y = Math.max(minY, Math.min(maxY, currentY + awayFromMouseY * 30));
+      }
       
       // Final bounds check to ensure position is safe
       x = Math.max(minX, Math.min(x, maxX));
       y = Math.max(minY, Math.min(y, maxY));
+      
+      // Update current position for next move
+      currentX = x;
+      currentY = y;
       
       // Apply position relative to hero section
       noBtn.style.position = 'absolute';
@@ -726,6 +741,9 @@
           noBtn.style.position = 'relative';
           noBtn.style.left = 'auto';
           noBtn.style.top = 'auto';
+          // Reset tracked position
+          currentX = null;
+          currentY = null;
         }, 1000);
       }
       
