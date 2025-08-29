@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Thiệp mời 💌</title>
-  <meta name="description" content="Thiệp mời online – mời đi chơi lúc 9h sáng Chủ nhật" />
+  <meta name="description" content="Thiệp mời online – Đi Anni vào Chủ nhật" />
   <style>
     :root {
       --bg: #fffbf0;
@@ -457,11 +457,11 @@
         <p class="invite-line">Anh mời em đi chơi vào <strong> Chủ nhật tuần nàyy</strong> 💖</p>
         <div class="details">
           <div class="detail">
-            <span class="label">Ngày giờ</span>
+            <span class="label">Time</span>
             <span class="value">09:00 • Chủ nhật (31/08/2025)</span>
           </div>
           <div class="detail">
-            <span class="label">Trang phục</span>
+            <span class="label">Outfit</span>
             <span class="value"> Em thích là được ✨ </span>
           </div>
         </div>
@@ -571,12 +571,7 @@
       }
     }
     
-    // Chạy khi hover (di chuột lại gần)
-    noBtn.addEventListener('mouseenter', () => {
-      if (dodgeCount >= 8) return;
-      storeOriginalPosition();
-      moveNo();
-    });
+    // Chạy khi hover (di chuột lại gần) - removed automatic movement on mouseenter
     
     // Chạy khi click
     noBtn.addEventListener('click', (e) => {
@@ -597,8 +592,8 @@
         Math.pow(e.clientX - centerX, 2) + Math.pow(e.clientY - centerY, 2)
       );
       
-      // Nếu chuột ở gần button (trong 80px) thì button sẽ chạy
-      if (distance < 80) {
+      // Nếu chuột ở gần button (trong 50px) thì button sẽ chạy
+      if (distance < 50) {
         storeOriginalPosition();
         moveNo(e);
       }
@@ -616,10 +611,28 @@
       
       // Calculate safe movement area within hero section with padding
       const padding = 20;
-      const maxX = heroRect.width - btnRect.width - padding;
-      const maxY = heroRect.height - btnRect.height - padding;
+      const btnWidth = 120; // Fixed button width for calculation
+      const btnHeight = 50; // Fixed button height for calculation
+      
+      // Ensure we have minimum space for movement
+      const availableWidth = Math.max(200, heroRect.width - (padding * 2));
+      const availableHeight = Math.max(100, heroRect.height - (padding * 2));
+      
+      const maxX = Math.max(padding + btnWidth, availableWidth - btnWidth);
+      const maxY = Math.max(padding + btnHeight, availableHeight - btnHeight);
       const minX = padding;
       const minY = padding;
+      
+      // Validate bounds to prevent negative values
+      if (maxX <= minX || maxY <= minY) {
+        // Just do a small shake instead of moving
+        noBtn.style.animation = 'shake 0.5s ease-in-out';
+        setTimeout(() => {
+          isMoving = false;
+          noBtn.style.animation = '';
+        }, 500);
+        return;
+      }
       
       // Get mouse position relative to hero section
       const mouseX = event?.clientX ? event.clientX - heroRect.left : heroRect.width / 2;
@@ -630,28 +643,30 @@
       // Find a position away from mouse but within hero section
       do {
         // Generate random position within safe bounds
-        x = minX + Math.random() * (maxX - minX);
-        y = minY + Math.random() * (maxY - minY);
+        const randomX = Math.random() * (maxX - minX);
+        const randomY = Math.random() * (maxY - minY);
+        x = minX + randomX;
+        y = minY + randomY;
         attempts++;
         
         // If too many attempts, place in corner opposite to mouse
         if (attempts > 10) {
           if (mouseX < heroRect.width / 2) {
-            x = Math.max(minX, maxX - 50); // Right side
+            x = Math.min(maxX, maxX - 20); // Right side
           } else {
-            x = minX; // Left side
+            x = Math.max(minX, minX + 20); // Left side
           }
           
           if (mouseY < heroRect.height / 2) {
-            y = Math.max(minY, maxY - 30); // Bottom
+            y = Math.min(maxY, maxY - 20); // Bottom
           } else {
-            y = minY; // Top
+            y = Math.max(minY, minY + 20); // Top
           }
           break;
         }
-      } while (Math.sqrt(Math.pow(x - mouseX, 2) + Math.pow(y - mouseY, 2)) < 60);
+      } while (attempts < 10 && Math.sqrt(Math.pow(x - mouseX, 2) + Math.pow(y - mouseY, 2)) < 60);
       
-      // Ensure final position is within bounds
+      // Final bounds check to ensure position is safe
       x = Math.max(minX, Math.min(x, maxX));
       y = Math.max(minY, Math.min(y, maxY));
       
